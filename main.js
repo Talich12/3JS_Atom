@@ -1,8 +1,11 @@
 import * as THREE from 'three'
+import { FrontSide } from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from '/node_modules/three/examples/jsm/postprocessing/RenderPass';
 import { UnrealBloomPass } from '/node_modules/three/examples/jsm/postprocessing/UnrealBloomPass';
+
+
 
 const scene  = new THREE.Scene();
  
@@ -17,7 +20,6 @@ renderer.setSize( window.innerWidth, window.innerHeight);
 camera.position.set(40,30,30);
 camera.lookAt(0,0,0);
  
-renderer.render(scene, camera);
 
 const renderScene = new RenderPass(scene, camera);
 const bloomPass = new UnrealBloomPass(
@@ -27,8 +29,8 @@ const bloomPass = new UnrealBloomPass(
   0.85
 );
 bloomPass.threshold = 0;
-bloomPass.strength = 1; //intensity of glow
-bloomPass.radius = 2;
+bloomPass.strength = 0.7; //intensity of glow
+bloomPass.radius = 0.2;
 const bloomComposer = new EffectComposer(renderer);
 bloomComposer.setSize(window.innerWidth, window.innerHeight);
 bloomComposer.renderToScreen = true;
@@ -47,12 +49,12 @@ scene.add(ring3);
 ring.rotateX(1.5708);
 ring3.rotateY(1.5708);
 
-const geometry =  new THREE.SphereGeometry(10,24,24)
+const geometry =  new THREE.SphereGeometry(10,128,128)
 const material =  new THREE.MeshStandardMaterial({color:0x44bdfc});
 const atom = new THREE.Mesh(geometry, material);
 scene.add(atom)
 
-const starGeometry = new THREE.SphereGeometry(2,24,24);
+const starGeometry = new THREE.SphereGeometry(2,32,32);
 const star = new THREE.Mesh(starGeometry,material);
 const star2 = new THREE.Mesh(starGeometry,material);
 const star3 = new THREE.Mesh(starGeometry,material);
@@ -64,16 +66,26 @@ star2.position.set(0,-30,0)
 star3.position.set(0,0,-30)
 
 
-const pointLight = new THREE.PointLight(0xffffff)
-pointLight.position.set(5,5,5)
 const ambientLight = new THREE.AmbientLight(0xffffff);
-scene.add(pointLight, ambientLight)
+scene.add(ambientLight)
 
 const controls = new OrbitControls(camera,renderer.domElement);
 
 var angle = 0;
+let Roja;
+function RojaCreate(){
+  const RojaGeometry = new THREE.SphereGeometry(11,128,128);
+  const RojaTexture = new THREE.TextureLoader().load('roja.jpg');
+  const RojaMaterial = new THREE.MeshStandardMaterial({map: RojaTexture , side: FrontSide})
+  Roja = new THREE.Mesh(RojaGeometry,RojaMaterial);
+  scene.add(Roja);
+  Roja.position.set = (0,0,0);
+}
 
+var KeyPressed;
+var GoDown;
 function animate(){
+
   requestAnimationFrame(animate);
   atom.rotation.x += 0.01;
   atom.rotation.y += 0.005;
@@ -88,11 +100,44 @@ function animate(){
   star3.position.y +=1*Math.cos(angle);
   star3.position.z +=1*Math.sin(angle);
 
-
+  if(KeyPressed && atom.scale.x < 3.1){
+    atom.scale.x += 0.01;
+    atom.scale.y +=0.01;
+    atom.scale.z +=0.01;
+  }
+  if(atom.scale.x >= 3.1){
+    GoDown = Boolean(true);
+    scene.remove(Roja);
+    scene.remove(star);
+    scene.remove(star2);
+    scene.remove(star3);
+    scene.remove(ring);
+    scene.remove(ring2);
+    scene.remove(ring3);
+  }
+  if(GoDown){
+    KeyPressed = false;
+    atom.scale.x -=0.9;
+    atom.scale.y -=0.9;
+    atom.scale.z -=0.9;
+  }
 
   angle += Math.PI/180*2;
   controls.update();
   bloomComposer.render();
+
  }
+ document.addEventListener('keydown', (event) => {
+  var name = event.key;
+  if (name == 'Shift'){
+    KeyPressed = new Boolean(true);
+  }
+  else if (name == 'Control'){
+    RojaCreate();
+  }
+  else if (name == 'Backspace'){
+    scene.remove(Roja);
+  }
+  }, false);
   
  animate()
